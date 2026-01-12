@@ -1,191 +1,263 @@
-Project Overview
+# 🔊 Text-to-Speech Application with AWS
+
 A serverless text-to-speech application that converts text input into audio files using AWS Polly, stores metadata in DynamoDB, and serves content through a web interface hosted on S3.
 
-Architecture
-text
-User Input → API Gateway → Lambda (PostReader_NewPost) → DynamoDB → SNS → 
-Lambda (ConvertToAudio) → Polly → S3 → Web Interface
-Technologies Used
-AWS Lambda (Python 3.13) - Serverless computing
+## 📋 Table of Contents
+- [Overview](#overview)
+- [Architecture](#architecture)
+- [Features](#features)
+- [Technologies](#technologies)
+- [Setup Instructions](#setup-instructions)
+- [API Documentation](#api-documentation)
+- [Deployment](#deployment)
+- [Troubleshooting](#troubleshooting)
 
-Amazon DynamoDB - NoSQL database for storing post metadata
 
-Amazon S3 - Object storage for audio files and web hosting
+## 📖 Overview
 
-Amazon Polly - Text-to-speech service
+This project demonstrates a fully serverless text-to-speech application built on AWS. Users can input text through a web interface, select a voice, and have it converted to speech using Amazon Polly. The application automatically processes requests, stores metadata in DynamoDB, and hosts audio files in S3.
 
-Amazon SNS - Notification service
+## 🏗️ Architecture
+User Interface → API Gateway → PostReader_NewPost Lambda → DynamoDB
+↓
+SNS Topic
+↓
+ConvertToAudio Lambda → Amazon Polly → S3 Bucket
+↓
+PostReader_GetPost Lambda ← DynamoDB
 
-API Gateway - REST API endpoints
+## ✨ Features
 
-IAM - Identity and access management
+- ✅ **Multiple Voice Options** - Choose from various Amazon Polly voices
+- ✅ **Real-time Processing** - Track status from PROCESSING to UPDATED
+- ✅ **Scalable Architecture** - Fully serverless, auto-scaling
+- ✅ **RESTful API** - Easy integration with other applications
+- ✅ **Web Interface** - User-friendly HTML/JS frontend
+- ✅ **Secure** - IAM roles with least privilege principle
+- ✅ **Cost-effective** - Pay-per-use pricing model
 
-Project Structure
-text
+## 🛠️ Technologies
+
+| Service | Purpose | Version |
+|---------|---------|---------|
+| **AWS Lambda** | Serverless computing | Python 3.13 |
+| **Amazon DynamoDB** | NoSQL database | - |
+| **Amazon S3** | Object storage & web hosting | - |
+| **Amazon Polly** | Text-to-speech conversion | - |
+| **Amazon SNS** | Notification service | - |
+| **API Gateway** | REST API endpoints | - |
+| **IAM** | Access management | - |
+
+## 📁 Project Structure
+text-to-speech-aws/
 ├── lambda-functions/
-│   ├── PostReader_NewPost.py    # Creates new posts
-│   ├── ConvertToAudio.py        # Converts text to speech
-│   └── PostReader_GetPost.py    # Retrieves posts
+│ ├── PostReader_NewPost.py # Creates new posts
+│ ├── ConvertToAudio.py # Converts text to speech
+│ └── PostReader_GetPost.py # Retrieves posts
 ├── web-interface/
-│   ├── index.html              # Frontend interface
-│   └── CloudAge-Logo.png       # Application logo
-└── infrastructure/
-    └── iam-role-policy.json    # IAM role permissions
-Setup Instructions
-Prerequisites
-AWS Account with appropriate permissions
+│ ├── index.html # Frontend interface
+│ └── CloudAge-Logo.png # Application logo
+├── infrastructure/
+│ └── iam-role-policy.json # IAM role permissions
+├── screenshots/
+│ ├── architecture.png # System architecture
+│ └── demo.gif # Application demo
+├── README.md # This file
+├── LICENSE # License file
+└── .gitignore # Git ignore file
 
-Basic understanding of AWS services
+## 🚀 Setup Instructions
 
-Python 3.13 knowledge
+### Prerequisites
+- **AWS Account** with appropriate permissions
+- **AWS CLI** configured with credentials
+- **Basic understanding** of AWS services
+- **Python 3.13** knowledge
 
-Deployment Steps
-Create DynamoDB Table
+### Step-by-Step Deployment
 
-Table name: AudioPost
+#### 1. Create DynamoDB Table
+```bash
+aws dynamodb create-table \
+    --table-name AudioPost \
+    --attribute-definitions AttributeName=id,AttributeType=S \
+    --key-schema AttributeName=id,KeyType=HASH \
+    --billing-mode PAY_PER_REQUEST
+```
 
-Partition key: id (String)
+#### 2. Create S3 Buckets
+```bash
+# Audio storage bucket
+aws s3api create-bucket \
+    --bucket audioposts-YOUR-NAME \
+    --region us-east-1
 
-Additional attributes: status, text, voice, url
+# Web hosting bucket
+aws s3api create-bucket \
+    --bucket text-to-speech-web-YOUR-NAME \
+    --region us-east-1
+```
 
-Create S3 Buckets
-
-Bucket 1: audioposts (for audio files)
-
-Bucket 2: (for web hosting with public access)
-
-Create SNS Topic
-
-Name: audiopost
-
-Display name: New posts
-
-Create IAM Role
-
-Name: CloudAge-Lambda-Role
-
-Attach the provided policy with permissions for:
-
-Polly (text-to-speech)
-
-DynamoDB (database operations)
-
-S3 (file storage)
-
-SNS (notifications)
-
-CloudWatch (logging)
-
-Deploy Lambda Functions
-
-PostReader_NewPost: Creates new posts
-
-ConvertToAudio: Processes text to audio
-
-PostReader_GetPost: Retrieves posts
-
-Configure API Gateway
-
-Create REST API: PostReaderAPI
-
-Configure POST and GET methods
-
-Enable CORS
-
-Set up query parameters and mapping templates
-
-Deploy Web Interface
-
-Upload index.html and logo to S3
-
-Enable static website hosting
-
-Update API Gateway endpoint in HTML
-
-API Endpoints
-POST /
-Purpose: Create new text-to-speech request
-
-Request Body:
-
-json
+#### 3. Create SNS Topic
+```bash
+aws sns create-topic \
+    --name audiopost \
+    --attributes DisplayName="New posts"
+```
+#### 4. Create IAM Role
+Create a role with the following trust policy:
+```json
 {
-  "voice": "Joanna",
-  "text": "Your text here"
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Principal": {
+                "Service": "lambda.amazonaws.com"
+            },
+            "Action": "sts:AssumeRole"
+        }
+    ]
 }
-Response: Post ID
+```
 
-GET /?postId={id}
-Purpose: Retrieve post information
+#### 5. Deploy Lambda Functions
+Upload each Lambda function through AWS Console or using:
+```bash
+aws lambda create-function \
+    --function-name PostReader_NewPost \
+    --runtime python3.13 \
+    --role arn:aws:iam::ACCOUNT:role/CloudAge-Lambda-Role \
+    --handler lambda_function.lambda_handler \
+    --zip-file fileb://PostReader_NewPost.zip
+```
 
-Parameters: postId (use * for all posts)
+#### 6. Configure API Gateway
+```bash
+aws apigateway create-rest-api \
+    --name PostReaderAPI \
+    --region us-east-1
+```
 
-Response: Post metadata
+## 📚 API Documentation
+#### Base URL
+```text
+https://{api-id}.execute-api.{region}.amazonaws.com/{stage}/
+```
 
-Security Considerations
-S3 buckets have appropriate ACLs and bucket policies
+#### Endpoints
+#### POST / - Create New Audio Post
+Request:
+```json
+{
+    "voice": "Joanna",
+    "text": "Hello, this is a test message."
+}
+```
+Response:
+```json
+{
+    "postId": "123e4567-e89b-12d3-a456-426614174000"
+}
+```
 
-IAM role follows principle of least privilege
+#### GET /?postId={id} - Retrieve Post Information
+Parameters:
 
-Lambda functions have appropriate timeouts
+postId (string): Post identifier, use * for all posts
 
-API Gateway configured with CORS
+Response:
+```json
+[
+    {
+        "id": "123e4567-e89b-12d3-a456-426614174000",
+        "text": "Hello, this is a test message.",
+        "voice": "Joanna",
+        "status": "UPDATED",
+        "url": "https://s3.amazonaws.com/audioposts/123e4567.mp3"
+    }
+]
+```
+## 🔧 Configuration
+Environment Variables
+Lambda Function	Variable	Value
+PostReader_NewPost	SNS_TOPIC	SNS Topic ARN
+PostReader_NewPost	DB_TABLE_NAME	posts
+ConvertToAudio	DB_TABLE_NAME	DynamoDB Table ARN
+ConvertToAudio	BUCKET_NAME	S3 Bucket Name
+PostReader_GetPost	DB_TABLE_NAME	posts
 
-Monitoring & Logging
-Lambda logs in CloudWatch
+### IAM Role Permissions
+The CloudAge-Lambda-Role requires permissions for:
+Polly: synthesizeSpeech
+DynamoDB: Query, Scan, PutItem, UpdateItem
+S3: PutObject, PutObjectAcl, GetBucketLocation
+SNS: Publish
+CloudWatch Logs: CreateLogGroup, CreateLogStream, PutLogEvents
 
-S3 access logs (if configured)
+## 🎮 Usage Example
+Access the Web Interface
+Navigate to your S3 static website URL.
 
-API Gateway execution logs
+Create Audio
 
-Workflow
-User submits text via web interface
+Enter text in the text area
 
-API Gateway triggers PostReader_NewPost
+Select a voice (e.g., Joanna, Matthew)
 
-Lambda stores data in DynamoDB with "PROCESSING" status
+Click "Say it!"
 
-SNS notification triggers ConvertToAudio
+View Results
 
-Polly converts text to audio
+Audio file is generated and stored
 
-Audio file stored in S3
+URL appears in the results section
 
-DynamoDB updated with "UPDATED" status and S3 URL
+Click "Play" to listen
 
-User can retrieve and play audio
+listen
 
-Features
-Multiple voice options via Amazon Polly
+## 🚨 Troubleshooting
+### Common Issues
+Issue	Solution
+Lambda Timeout	Increase timeout to 5 minutes for ConvertToAudio
+S3 Permission Denied	Check bucket policy and ACL settings
+Polly Character Limit	Split text into chunks < 3000 characters
+CORS Errors	Verify API Gateway CORS configuration
+Missing Environment Variables	Check Lambda function configuration
 
-Scalable serverless architecture
+### Debugging Steps
+1. Check CloudWatch Logs
+``` bash
+aws logs filter-log-events \
+    --log-group-name /aws/lambda/PostReader_NewPost \
+    --start-time $(date -d '1 hour ago' +%s000)
+```
 
-Real-time processing status
+2. Test Lambda Functions
+``` bash
+aws lambda invoke \
+    --function-name PostReader_NewPost \
+    --payload '{"voice":"Joanna","text":"test"}' \
+    output.json
+```
 
-Publicly accessible audio files
+3. Verify S3 Objects
+``` bash
+aws s3 ls s3://audioposts-YOUR-NAME/
+```
 
-Responsive web interface
+## 📊 Monitoring
+CloudWatch Metrics: Lambda invocations, errors, duration
+S3 Access Logs: File downloads and access patterns
+API Gateway Metrics: Request count, latency, 4XX/5XX errors
+Cost Monitoring: AWS Cost Explorer for budget tracking
 
-RESTful API
+## 🔮 Future Enhancements
+Add user authentication
+Implement text preprocessing
+Add support for multiple languages
+Implement audio concatenation for long texts
+Add WebSocket for real-time status updates
+Implement caching layer
 
-Troubleshooting
-Check CloudWatch logs for Lambda errors
-
-Verify IAM role permissions
-
-Confirm S3 bucket policies allow public read
-
-Ensure API Gateway CORS settings are correct
-
-Validate environment variables in Lambda functions
-
-Notes
-Maximum text length per Polly call: ~3000 characters
-
-Supported Polly voices: Joanna, Matthew, etc.
-
-Audio format: MP3
-
-Region-specific S3 URLs
-
-Note: Ensure all AWS resources are properly configured in the same region for optimal performance and to avoid cross-region data transfer costs.
