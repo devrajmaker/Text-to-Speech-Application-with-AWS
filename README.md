@@ -1,15 +1,11 @@
-**# Text-to-Speech-Application-with-AWS
-🚀 Project Overview**
+Project Overview
 A serverless text-to-speech application that converts text input into audio files using AWS Polly, stores metadata in DynamoDB, and serves content through a web interface hosted on S3.
 
-**🏗️ Architecture**
-The application follows a microservices architecture using AWS serverless services:
-
+Architecture
 text
 User Input → API Gateway → Lambda (PostReader_NewPost) → DynamoDB → SNS → 
 Lambda (ConvertToAudio) → Polly → S3 → Web Interface
-
-**🛠️ Technologies Used**
+Technologies Used
 AWS Lambda (Python 3.13) - Serverless computing
 
 Amazon DynamoDB - NoSQL database for storing post metadata
@@ -24,7 +20,7 @@ API Gateway - REST API endpoints
 
 IAM - Identity and access management
 
-**📁 Project Structure**
+Project Structure
 text
 ├── lambda-functions/
 │   ├── PostReader_NewPost.py    # Creates new posts
@@ -35,8 +31,7 @@ text
 │   └── CloudAge-Logo.png       # Application logo
 └── infrastructure/
     └── iam-role-policy.json    # IAM role permissions
-    
-**🔧 Setup Instructions**
+Setup Instructions
 Prerequisites
 AWS Account with appropriate permissions
 
@@ -44,7 +39,7 @@ Basic understanding of AWS services
 
 Python 3.13 knowledge
 
-**Deployment Steps**
+Deployment Steps
 Create DynamoDB Table
 
 Table name: AudioPost
@@ -107,7 +102,7 @@ Enable static website hosting
 
 Update API Gateway endpoint in HTML
 
-**🌐 API Endpoints**
+API Endpoints
 POST /
 Purpose: Create new text-to-speech request
 
@@ -127,7 +122,7 @@ Parameters: postId (use * for all posts)
 
 Response: Post metadata
 
-**🔒 Security Considerations**
+Security Considerations
 S3 buckets have appropriate ACLs and bucket policies
 
 IAM role follows principle of least privilege
@@ -136,14 +131,14 @@ Lambda functions have appropriate timeouts
 
 API Gateway configured with CORS
 
-**📈 Monitoring & Logging**
+Monitoring & Logging
 Lambda logs in CloudWatch
 
 S3 access logs (if configured)
 
 API Gateway execution logs
 
-**🔄 Workflow**
+Workflow
 User submits text via web interface
 
 API Gateway triggers PostReader_NewPost
@@ -160,7 +155,7 @@ DynamoDB updated with "UPDATED" status and S3 URL
 
 User can retrieve and play audio
 
-**🎯 Features**
+Features
 Multiple voice options via Amazon Polly
 
 Scalable serverless architecture
@@ -171,9 +166,9 @@ Publicly accessible audio files
 
 Responsive web interface
 
-**RESTful API**
+RESTful API
 
-**🚨 Troubleshooting**
+Troubleshooting
 Check CloudWatch logs for Lambda errors
 
 Verify IAM role permissions
@@ -184,7 +179,7 @@ Ensure API Gateway CORS settings are correct
 
 Validate environment variables in Lambda functions
 
-**📝 Notes**
+Notes
 Maximum text length per Polly call: ~3000 characters
 
 Supported Polly voices: Joanna, Matthew, etc.
